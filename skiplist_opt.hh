@@ -51,7 +51,7 @@ public:
     }
 
     ~SkipListOpt() {
-        // destroy all nodes
+        // destroy all the nodes in our skiplist
         node_type* curr = _head->_forward[0];
         while (curr != nullptr) {
             node_type* tmp = curr;
@@ -104,6 +104,7 @@ public:
     //     return nullptr;
     // }
 
+    // search with prefetching
     V* search(const K& aKey) {
         node_type* curr = _head;
         
@@ -146,6 +147,7 @@ public:
             }
             node_type::destroy(curr);
 
+            // adjust current level if necessary
             while (_currLevel > 0 && _head->_forward[_currLevel] == nullptr) {
                 --_currLevel;
             }

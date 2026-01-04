@@ -1,3 +1,8 @@
+//
+//  node.hh
+//
+//  Created by Fisnik Kastrati on 03.01.2026.
+//
 #pragma once
 template <typename K, typename V>
 struct node_t {
@@ -9,7 +14,6 @@ struct node_t {
         for (int i = 0; i < level; ++i) _forward[i] = nullptr;
     }
 
-    // Create: exception safe
     static node_t* create(const K& key, const V& val, int level) {
         if (level <= 0) level = 1;
         const size_t size = sizeof(node_t) + size_t(level - 1) * sizeof(node_t*);
@@ -17,7 +21,6 @@ struct node_t {
         return new (mem) node_t(key, val, level);
     }
 
-    // Destroy: call dtor and free memory (portable)
     static void destroy(node_t* p) noexcept {
         if (!p) return;
         p->~node_t();
