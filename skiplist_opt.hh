@@ -14,7 +14,7 @@ struct node_t {
 
 
 template <typename K, typename V> 
-class SkipList {
+class SkipListOpt {
     using node_type = node_t<K, V>;
     node_type* _head;
     int _maxLevel;
@@ -24,23 +24,26 @@ class SkipList {
     // random number generation for Level height
     std::mt19937 _gen;
     std::uniform_real_distribution<float> _dis;
+    std::vector<node_type*> _update;
+
 
     int randomLevel() {
-        int lvl = 0;
-        while (_dis(_gen) < _p && lvl < _maxLevel) {
-            lvl++;
-        }
-        return lvl;
+        // generate a random 32-bit integer
+        uint32_t r = _gen();
+
+        // count trailing zeros gives us the level height based on powers of 2
+        int lvl = __builtin_ctz(r);
+        return (lvl > _maxLevel) ? _maxLevel : lvl;
     }
 public:
-    SkipList(int aMaxLevel = 16) 
-        : _maxLevel(aMaxLevel), _currLevel(0), _gen(std::random_device{}()), _dis(0, 1) {
+    SkipListOpt(int aMaxLevel = 16) 
+        : _maxLevel(aMaxLevel), _currLevel(0), _gen(std::random_device{}()), _dis(0, 1), _update(aMaxLevel+1, nullptr) {
         
         // initialize head with a "dummy" key (assuming K can handle a default ctor)
         _head = new node_t(K(), V(), _maxLevel);
     }
 
-    ~SkipList() {
+    ~SkipListOpt() {
         auto curr = _head->_forward[0];
         while (curr != nullptr) {
             auto tmp = curr;
@@ -52,7 +55,6 @@ public:
 
 public:
     void insert(K aKey, V aVal) {
-        std::vector<node_type*> update(_maxLevel+1, nullptr);
         node_type* curr = _head;
         
         // set all the pointers in the tower to the correct position for insertion (to follow)
@@ -60,7 +62,7 @@ public:
             while (curr->_forward[i] != nullptr && curr->_forward[i]->_key < aKey)  {
                 curr = curr->_forward[i];
             }
-            update[i] = curr;
+            _update[i] = curr;
         }
 
         curr = curr->_forward[0];
@@ -75,7 +77,7 @@ public:
 
         if (levels > _currLevel) {
             for (int i=_currLevel + 1; i<=levels; ++i)
-                update[i] = _head;
+                _update[i] = _head;
             _currLevel = levels;
         }
 
@@ -83,8 +85,8 @@ public:
 
         // insert the new key
         for (int i=levels; i>=0; --i) {
-            lnode->_forward[i] = update[i]->_forward[i];
-            update[i]->_forward[i] = lnode;
+            lnode->_forward[i] = _update[i]->_forward[i];
+            _update[i]->_forward[i] = lnode;
         }
     }
 
@@ -109,13 +111,12 @@ public:
 
 	void erase(K aKey) {
 		node_type* curr = _head;
-		std::vector<node_type*> update(_maxLevel + 1, nullptr);
 
 		for (int i = _currLevel; i >= 0; --i) {
 			while (curr->_forward[i] && curr->_forward[i]->_key < aKey) {
 				curr = curr->_forward[i];
 			}
-			update[i] = curr;
+			_update[i] = curr;
 		}
 
 		curr = curr->_forward[0];
@@ -123,8 +124,8 @@ public:
 		if (curr && curr->_key == aKey) {
 			for (int i = 0; i <= _currLevel; ++i) {
 				// only update pointers that actually point to the node we are removing
-				if (update[i]->_forward[i] != curr) break;
-				update[i]->_forward[i] = curr->_forward[i];
+				if (_update[i]->_forward[i] != curr) break;
+				_update[i]->_forward[i] = curr->_forward[i];
 			}
 			delete curr;
 
@@ -150,6 +151,6 @@ public:
 };
 
 template <typename K, typename V>
-std::ostream& operator<<(std::ostream& os, const SkipList<K, V>& list) {
+std::ostream& operator<<(std::ostream& os, const SkipListOpt<K, V>& list) {
     return list.print(os);
 }

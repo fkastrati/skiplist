@@ -1,0 +1,11 @@
+--- Testing SkipList (Elements: 1000000, Max Levels: 16) ---
+Insert Time: 502.179 ms
+Search Time: 699.187 ms
+Remove Time: 801.516 ms
+-----------------------------------------------
+
+--- Testing SkipList (Elements: 10000000, Max Levels: 16) ---
+Insert Time: 20273.4 ms
+Search Time: 28066.9 ms
+Remove Time: 22404.4 ms
+-----------------------------------------------
