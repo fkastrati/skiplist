@@ -1,7 +1,7 @@
 # skiplist
 # High-Performance SkipList Implementation in C++
 
-A modern, optimized C++ implementation of the SkipList probabilistic data structure with extensive performance benchmarking against `std::map`.
+A modern, optimized C++ implementation of the SkipList probabilistic data structure with performance benchmarking against `std::map`.
 
 ## Overview
 

@@ -1,65 +1,70 @@
+//
+//  skiplist_opt.hh
+//
+//  Created by Fisnik Kastrati on 03.01.2026.
+//
+#pragma once
 #include <iostream>
 #include <vector>
 #include <random>
 #include <climits>
+#include <bit>
 
-
-template <typename K, typename V> 
-struct node_t {
-    K _key;
-    V _val;
-    std::vector<node_t*> _forward;
-    node_t(K aKey, V aVal, size_t aTowerSize) : _key(aKey), _val(aVal), _forward(aTowerSize+1, nullptr) {}
-};
-
-
-template <typename K, typename V> 
+template <typename K, typename V>
 class SkipListOpt {
     using node_type = node_t<K, V>;
     node_type* _head;
-    int _maxLevel;
-    int _currLevel; // current highest tower
-    float _p{0.5};  // p hard coded to `0.5' but it can also be moved to ctor
+    int _maxLevel;           // maximum level index
+    int _currLevel;          // current highest occupied level index
+    float _p{0.5f};
 
-    // random number generation for Level height
-    std::mt19937 _gen;
-    std::uniform_real_distribution<float> _dis;
     std::vector<node_type*> _update;
 
-
+    uint64_t _rng_state;
+    
+    uint64_t xorshift64() {
+        uint64_t x = _rng_state;
+        x ^= x << 13;
+        x ^= x >> 7;
+        x ^= x << 17;
+        _rng_state = x;
+        return x;
+    }
+    
     int randomLevel() {
-        // generate a random 32-bit integer
-        uint32_t r = _gen();
-
-        // count trailing zeros gives us the level height based on powers of 2
+        uint32_t r = static_cast<uint32_t>(xorshift64());
+        r |= (r == 0); // ensure non-zero
         int lvl = __builtin_ctz(r);
         return (lvl > _maxLevel) ? _maxLevel : lvl;
     }
+
+    int computeMaxLevel(size_t n) {
+        if (n <= 1) return 1;
+        return std::bit_width(n - 1);
+    }
+
 public:
-    SkipListOpt(int aMaxLevel = 16) 
-        : _maxLevel(aMaxLevel), _currLevel(0), _gen(std::random_device{}()), _dis(0, 1), _update(aMaxLevel+1, nullptr) {
-        
-        // initialize head with a "dummy" key (assuming K can handle a default ctor)
-        _head = new node_t(K(), V(), _maxLevel);
+    SkipListOpt(int aNnodes)
+        : _maxLevel(computeMaxLevel(aNnodes)), _currLevel(0), _update(_maxLevel + 1, nullptr)
+    {
+        _head = node_type::create(K(), V(), _maxLevel + 1);
     }
 
     ~SkipListOpt() {
-        auto curr = _head->_forward[0];
+        // destroy all nodes
+        node_type* curr = _head->_forward[0];
         while (curr != nullptr) {
-            auto tmp = curr;
+            node_type* tmp = curr;
             curr = curr->_forward[0];
-            delete tmp;
+            node_type::destroy(tmp);
         }
-        delete _head;
+        node_type::destroy(_head);
     }
 
-public:
-    void insert(K aKey, V aVal) {
+    void insert(const K& aKey, const V& aVal) {
         node_type* curr = _head;
-        
-        // set all the pointers in the tower to the correct position for insertion (to follow)
-        for (int i=_currLevel; i>=0; --i) {
-            while (curr->_forward[i] != nullptr && curr->_forward[i]->_key < aKey)  {
+        for (int i = _currLevel; i >= 0; --i) {
+            while (curr->_forward[i] && curr->_forward[i]->_key < aKey) {
                 curr = curr->_forward[i];
             }
             _update[i] = curr;
@@ -67,82 +72,93 @@ public:
 
         curr = curr->_forward[0];
 
-        // check if we already have the key
         if (curr && curr->_key == aKey) {
             curr->_val = aVal;
             return;
         }
 
         int levels = randomLevel();
-
         if (levels > _currLevel) {
-            for (int i=_currLevel + 1; i<=levels; ++i)
+            for (int i = _currLevel + 1; i <= levels; ++i)
                 _update[i] = _head;
             _currLevel = levels;
         }
 
-        node_type* lnode = new node_type(aKey, aVal, levels);
-
-        // insert the new key
-        for (int i=levels; i>=0; --i) {
+        node_type* lnode = node_type::create(aKey, aVal, levels + 1);
+        
+        for (int i = levels; i >= 0; --i) {
             lnode->_forward[i] = _update[i]->_forward[i];
             _update[i]->_forward[i] = lnode;
         }
     }
 
-    V* search(K aKey) {
-        node_type * curr = _head;
+    // V* search(const K& aKey) {
+    //     node_type* curr = _head;
+    //     for (int i = _currLevel; i >= 0; --i) {
+    //         while (curr->_forward[i] && curr->_forward[i]->_key < aKey) {
+    //             curr = curr->_forward[i];
+    //         }
+    //     }
+    //     curr = curr->_forward[0];
+    //     if (curr && curr->_key == aKey) return &curr->_val;
+    //     return nullptr;
+    // }
 
-        for (int i=_currLevel; i>=0; --i) {
-            while (curr->_forward[i] && curr->_forward[i]->_key < aKey)  {
-                curr = curr->_forward[i];
+    V* search(const K& aKey) {
+        node_type* curr = _head;
+        
+        for (int i = _currLevel; i >= 0; --i) {
+            node_type* next = curr->_forward[i];
+            
+            while (next && next->_key < aKey) {
+                __builtin_prefetch(next->_forward[i], 0, 1);
+                curr = next;
+                next = curr->_forward[i];
+            }
+            
+            if (next && next->_key == aKey) {
+                return &next->_val;
             }
         }
         
-        curr = curr->_forward[0];
-
-        if (curr != nullptr && curr->_key == aKey) {
-            return &(curr->_val);
-        }
-
         return nullptr;
     }
 
+    void erase(const K& aKey) {
+        node_type* curr = _head;
+        for (int i = _currLevel; i >= 0; --i) {
+            node_type* next = curr->_forward[i];
 
-	void erase(K aKey) {
-		node_type* curr = _head;
+            while (next && next->_key < aKey) {
+                __builtin_prefetch(next->_forward[i], 0, 1);
+                curr = next;
+                next = curr->_forward[i];
+            }
+            _update[i] = curr;
+        }
 
-		for (int i = _currLevel; i >= 0; --i) {
-			while (curr->_forward[i] && curr->_forward[i]->_key < aKey) {
-				curr = curr->_forward[i];
-			}
-			_update[i] = curr;
-		}
+        curr = curr->_forward[0];
 
-		curr = curr->_forward[0];
+        if (curr && curr->_key == aKey) {
+            for (int i = 0; i <= _currLevel; ++i) {
+                if (_update[i]->_forward[i] != curr) break;
+                _update[i]->_forward[i] = curr->_forward[i];
+            }
+            node_type::destroy(curr);
 
-		if (curr && curr->_key == aKey) {
-			for (int i = 0; i <= _currLevel; ++i) {
-				// only update pointers that actually point to the node we are removing
-				if (_update[i]->_forward[i] != curr) break;
-				_update[i]->_forward[i] = curr->_forward[i];
-			}
-			delete curr;
-
-			// shrink the current level if the tallest node was removed
-			while (_currLevel > 0 && _head->_forward[_currLevel] == nullptr) {
-				--_currLevel;
-			}
-		}
-	}
+            while (_currLevel > 0 && _head->_forward[_currLevel] == nullptr) {
+                --_currLevel;
+            }
+        }
+    }
 
     std::ostream& print(std::ostream& os) const {
-        for (int i=_currLevel; i>=0; --i) {
-            node_type* curr = _head;
+        for (int i = _currLevel; i >= 0; --i) {
+            const node_type* curr = _head;
             os << i << ": ";
-            while (curr->_forward[i] != nullptr)  {
+            while (curr->_forward[i] != nullptr) {
                 curr = curr->_forward[i];
-                os << curr->_key << " -> "; 
+                os << curr->_key << " -> ";
             }
             os << "Nil\n";
         }
@@ -150,7 +166,7 @@ public:
     }
 };
 
-template <typename K, typename V>
+template <typename K, typename V, int TMaxLevel>
 std::ostream& operator<<(std::ostream& os, const SkipListOpt<K, V>& list) {
     return list.print(os);
 }

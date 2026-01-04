@@ -1,21 +1,25 @@
+#pragma once
+
+//
+//  skiplist.hh
+//
+//  Created by Fisnik Kastrati on 03.01.2026.
+//
+
 #include <iostream>
 #include <vector>
 #include <random>
 #include <climits>
 
-
-template <typename K, typename V> 
-struct node_t {
-    K _key;
-    V _val;
-    std::vector<node_t*> _forward;
-    node_t(K aKey, V aVal, size_t aTowerSize) : _key(aKey), _val(aVal), _forward(aTowerSize+1, nullptr) {}
-};
-
-
 template <typename K, typename V> 
 class SkipList {
-    using node_type = node_t<K, V>;
+    struct node_t {
+        K _key;
+        V _val;
+        std::vector<node_t*> _forward;
+        node_t(K aKey, V aVal, size_t aTowerSize) : _key(aKey), _val(aVal), _forward(aTowerSize+1, nullptr) {}
+    };
+    using node_type = node_t;
     node_type* _head;
     int _maxLevel;
     int _currLevel; // current highest tower
@@ -32,9 +36,18 @@ class SkipList {
         }
         return lvl;
     }
+
+    // formula: max_level = ceil(log(n) / log(1/p))
+    inline int computeMaxLevel(size_t expectedElements) {
+        if (expectedElements <= 1) return 1;
+        
+        double logP = std::log(1.0 / _p);
+        double logN = std::log(static_cast<double>(expectedElements));
+        return static_cast<int>(std::ceil(logN / logP));
+    }
 public:
-    SkipList(int aMaxLevel = 16) 
-        : _maxLevel(aMaxLevel), _currLevel(0), _gen(std::random_device{}()), _dis(0, 1) {
+    SkipList(int aNodes) 
+        : _maxLevel(computeMaxLevel(aNodes)), _currLevel(0), _gen(std::random_device{}()), _dis(0, 1) {
         
         // initialize head with a "dummy" key (assuming K can handle a default ctor)
         _head = new node_t(K(), V(), _maxLevel);
