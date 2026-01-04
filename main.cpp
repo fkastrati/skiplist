@@ -74,20 +74,6 @@ int main(int argc, char** argv) {
         // t1 = chrono::high_resolution_clock::now();
         // cout << "SkipList Remove Time: " << chrono::duration<double, milli>(t1 - t0).count() << " ms\n";
     }
-    // Super SkipList Test
-    {
-        SkipListSuper<uint64_t, uint64_t> skip(N);
-        auto t0 = chrono::high_resolution_clock::now();
-        for (size_t i = 0; i < N; ++i) skip.insert(keys[i], keys[i]);
-        auto t1 = chrono::high_resolution_clock::now();
-        cout << "SkipList Super Insert: " << chrono::duration<double, milli>(t1 - t0).count() << " ms\n";
-
-        t0 = chrono::high_resolution_clock::now();
-        size_t found = 0;
-        for (size_t i = 0; i < N; ++i) if (skip.search(keys[i])) ++found;
-        t1 = chrono::high_resolution_clock::now();
-        cout << "SkipList Super Search: " << chrono::duration<double, milli>(t1 - t0).count() << " ms (found=" << found << ")\n";
-    }
     // std::map test
     {
         map<uint64_t, uint64_t> m;
