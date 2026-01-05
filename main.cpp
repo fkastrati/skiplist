@@ -34,9 +34,9 @@ int main(int argc, char** argv) {
 
     // SkipList test
     {
-        SkipListOpt<uint64_t, uint64_t> skip(N);
+        SkipListOpt<uint64_t, std::string> skip(N);
         auto t0 = chrono::high_resolution_clock::now();
-        for (size_t i = 0; i < N; ++i) skip.insert(keys[i], keys[i]);
+        for (size_t i = 0; i < N; ++i) skip.insert(keys[i], std::to_string(keys[i]) + "babar");
         auto t1 = chrono::high_resolution_clock::now();
         cout << "SkipList Opt Insert Time: " << chrono::duration<double, milli>(t1 - t0).count() << " ms\n";
 
@@ -76,9 +76,9 @@ int main(int argc, char** argv) {
     }
     // std::map test
     {
-        map<uint64_t, uint64_t> m;
+        map<uint64_t, std::string> m;
         auto t0 = chrono::high_resolution_clock::now();
-        for (size_t i = 0; i < N; ++i) m.emplace(keys[i], keys[i]);
+        for (size_t i = 0; i < N; ++i) m.emplace(keys[i], std::to_string(keys[i]) + "babar");
         auto t1 = chrono::high_resolution_clock::now();
         cout << "std::map Insert Time: " << chrono::duration<double, milli>(t1 - t0).count() << " ms\n";
 
