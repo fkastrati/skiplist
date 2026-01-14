@@ -13,7 +13,6 @@ This project implements a SkipList - a probabilistic alternative to balanced tre
 
 - **Generic Template Design**: Supports any key-value types with comparison operators
 - **Optimized Random Number Generation**: Uses PCG32/Xorshift instead of std::mt19937 for 10-15x faster level generation
-- **Memory Efficient**: Reusable update buffer eliminates repeated allocations
 - **Early Exit Search**: Stops traversal as soon as exact match is found
 - **Cache-Friendly**: Forward iteration and prefetching for improved cache locality
 - **Automatic Level Calculation**: Computes optimal max levels based on expected dataset size
