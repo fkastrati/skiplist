@@ -27,5 +27,6 @@ clang++ -std=c++23 -O3 -march=native -funroll-loops -fvectorize -DNDEBUG -Wall -
 ├── main.cc              # Benchmark harness and test driver
 ├── skiplist.hh          # Base SkipList implementation
 ├── skiplist_opt.hh      # Optimized SkipList with performance enhancements
+├── node.hh
 └── README.md            # This file
 ```
