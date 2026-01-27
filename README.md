@@ -30,3 +30,6 @@ clang++ -std=c++23 -O3 -march=native -funroll-loops -fvectorize -DNDEBUG -Wall -
 ├── node.hh
 └── README.md            # This file
 ```
+
+
+![alt text](https://github.com/fkastrati/skiplist/blob/main/skiplist_viz.png)
