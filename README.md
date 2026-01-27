@@ -9,6 +9,8 @@ This project implements a SkipList - a probabilistic alternative to balanced tre
 
 **Note**: SkipList provides *expected* O(log n) performance with high probability.
 
+![alt text](https://github.com/fkastrati/skiplist/blob/main/skiplist_viz.png)
+
 ## Features
 
 - **Generic Template Design**: Supports any key-value types with comparison operators
@@ -30,6 +32,3 @@ clang++ -std=c++23 -O3 -march=native -funroll-loops -fvectorize -DNDEBUG -Wall -
 ├── node.hh
 └── README.md            # This file
 ```
-
-
-![alt text](https://github.com/fkastrati/skiplist/blob/main/skiplist_viz.png)
